@@ -23,13 +23,13 @@ object DatabaseUtils {
       val ifUserExists: Boolean = checkIfExists(user.email)
       if(ifUserExists)
       {
-        "Failure"
+        "Saving User Failed"
       }
       else
       {
         val future = DatabaseConfig.collection.insertOne(user).toFuture()
         Await.result(future,10.seconds)
-        "Success"
+        "Saved User Successfully"
       }
     }
     else {
