@@ -10,5 +10,5 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
  */
 //For Marshalling the data
 trait UserJsonSupport extends DefaultJsonProtocol with SprayJsonSupport {
-  implicit val userFormat: RootJsonFormat[User] = jsonFormat2(User)
+  implicit val userFormat: RootJsonFormat[User] = jsonFormat3(User)
 }

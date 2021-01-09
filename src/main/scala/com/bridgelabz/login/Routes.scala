@@ -3,14 +3,20 @@ package com.bridgelabz.login
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.Directives.{complete, concat, extractUri, get, handleExceptions, path}
-import akka.http.scaladsl.server.{ExceptionHandler, Route}
-import com.bridgelabz.login.models.UserJsonSupport
+import akka.http.scaladsl.server.Directives.{_symbol2NR, complete, concat, entity, extractUri, get, handleExceptions, parameters, path, post, redirect}
+import akka.http.scaladsl.server.{Directives, ExceptionHandler, Route}
+import com.bridgelabz.login.database.DatabaseUtils
+import com.bridgelabz.login.models.{LoginRequest, LoginRequestJsonSupport, User, UserJsonSupport}
+import com.bridgelabz.login.users.UserManager
+import com.nimbusds.jose.JWSObject
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success}
+import akka.http.scaladsl.model._
 
-object Routes extends App with UserJsonSupport {
+
+object Routes extends App with UserJsonSupport with LoginRequestJsonSupport {
   val host = System.getenv("Host")
   val port = System.getenv("Port").toInt
 
@@ -40,10 +46,77 @@ object Routes extends App with UserJsonSupport {
   def route: Route = {
     handleExceptions(exceptionHandler) {
       concat(
+        post {
+          concat(
+            path("login") {
+              entity(Directives.as[LoginRequest]) { request =>
+                val user: User = User(request.email, request.password, verificationComplete = false)
+                val userLoginStatus: Int = UserManager.userLogin(user)
+                if (userLoginStatus == 200) {
+                  complete {
+                    HttpResponse(StatusCodes.OK, entity = "Logged in successfully. Happy to serve you!")
+                  }
+                }
+                else if (userLoginStatus == 404) {
+                  complete {
+                    HttpResponse(StatusCodes.NotFound, entity = "Login failed. Your account does not seem to exist. If you did not register yet, head to: http://localhost:9000/register")
+                  }
+                }
+                else {
+                  complete {
+                    HttpResponse(StatusCodes.Unauthorized, entity = "Login failed. Your account is not verified. Head to http://localhost:9000/verify for the same.")
+                  }
+                }
+              }
+            },
+            path("register") {
+              entity(Directives.as[LoginRequest]) { request =>
+                val user: User = User(request.email, request.password, verificationComplete = false)
+                val userRegisterStatus: Int = UserManager.createNewUser(user)
+                if (userRegisterStatus == 215) {
+                  complete {
+                    HttpResponse(StatusCodes.OK, entity = UserManager.sendVerificationEmail(user))
+                  }
+                }
+                else if (userRegisterStatus == 414) {
+                  complete {
+                    HttpResponse(StatusCodes.BadRequest, entity = "Bad email, try again with a valid entry.")
+                  }
+                }
+                else {
+                  complete {
+                    HttpResponse(StatusCodes.Conflict, entity = "User registration failed.")
+                  }
+                }
+              }
+            }
+          )
+        },
         get {
-          path("/") {
-            complete("Site under development.")
-          }
+          concat(
+            path("verify") {
+              parameters('token.as[String], 'email.as[String]) { (token, email) =>
+                val jwsObject = JWSObject.parse(token)
+                val updateUserAsVerified = DatabaseUtils.verifyEmail(email)
+                Await.result(updateUserAsVerified, 60.seconds)
+                if (jwsObject.getPayload.toJSONObject.get("email").equals(email)) {
+                  complete {
+                    HttpResponse(StatusCodes.OK, entity = "User successfully verified and registered!")
+                  }
+                }
+                else {
+                  complete {
+                    HttpResponse(StatusCodes.Unauthorized, entity = "User could not be verified!")
+                  }
+                }
+              }
+            },
+            path(Directives.IntNumber){int =>
+              val longUrl = DatabaseUtils.longUrl(int)
+              val urls = Await.result(longUrl, 60.seconds)
+              redirect(urls.head.url, StatusCodes.TemporaryRedirect)
+            }
+          )
         }
       )
     }

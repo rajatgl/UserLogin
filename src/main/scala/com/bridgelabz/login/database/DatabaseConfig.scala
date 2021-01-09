@@ -1,6 +1,6 @@
 package com.bridgelabz.login.database
 
-import com.bridgelabz.login.models.User
+import com.bridgelabz.login.models.{ShortUrl, User}
 import org.bson.codecs.configuration.{CodecProvider, CodecRegistries, CodecRegistry}
 import org.mongodb.scala.MongoClient.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros
@@ -25,4 +25,14 @@ protected object DatabaseConfig {
   val database: MongoDatabase = mongoClient.getDatabase(databaseName).withCodecRegistry(codecRegistry)
   val collectionName: String = "Users"
   val collection: MongoCollection[User] = database.getCollection(collectionName)
+
+  val codecProviderForUrl: CodecProvider = Macros.createCodecProvider[ShortUrl]()
+  val codecRegistryForUrl: CodecRegistry = CodecRegistries.fromRegistries(
+    CodecRegistries.fromProviders(codecProviderForUrl),
+    DEFAULT_CODEC_REGISTRY
+  )
+
+  val databaseForUrl: MongoDatabase = mongoClient.getDatabase(databaseName).withCodecRegistry(codecRegistryForUrl)
+  val collectionNameForUrl: String = "Tokens"
+  val collectionForUrl: MongoCollection[ShortUrl] = databaseForUrl.getCollection(collectionNameForUrl)
 }

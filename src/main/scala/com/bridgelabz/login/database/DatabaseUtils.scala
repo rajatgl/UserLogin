@@ -1,7 +1,9 @@
 package com.bridgelabz.login.database
 
-import com.bridgelabz.login.models.User
+import com.bridgelabz.login.models.{ShortUrl, User}
 import org.mongodb.scala.model.Filters.equal
+import org.mongodb.scala.model.Updates.set
+import org.mongodb.scala.{Completed, result}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
@@ -63,5 +65,20 @@ object DatabaseUtils {
    */
   def getUsers(email : String): Future[Seq[User]] = {
     DatabaseConfig.collection.find(equal("email",email)).toFuture()
+  }
+
+  def verifyEmail(email: String): Future[result.UpdateResult] = {
+    DatabaseConfig.collection.updateOne(equal("email", email), set("verificationComplete", true)).toFuture()
+  }
+
+  def longUrl(index: Int): Future[Seq[ShortUrl]] = {
+    DatabaseConfig.collectionForUrl.find(equal("index", index)).toFuture()
+  }
+
+  def shortUrl(longUrl: String):Int = {
+    val newIndex = DatabaseConfig.collectionForUrl.count().toFuture()
+    val newIndexLong = Await.result(newIndex, 60.seconds)
+    DatabaseConfig.collectionForUrl.insertOne(new ShortUrl(newIndexLong.toInt, longUrl)).toFuture()
+    newIndexLong.toInt
   }
 }
