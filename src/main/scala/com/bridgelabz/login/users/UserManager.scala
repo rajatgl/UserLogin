@@ -21,7 +21,7 @@ object UserManager {
   /**
    *
    * @param user instance to be logged in
-   * @return status message of login operation
+   * @return status code of login operation
    */
   def userLogin(user: User): Int = {
 
@@ -36,6 +36,11 @@ object UserManager {
     404
   }
 
+  /**
+   *
+   * @param user instance to be saved into the database
+   * @return status code of createNewUser operation
+   */
   def createNewUser(user: User): Int = {
     val statusMessage = DatabaseUtils.saveUser(user)
     statusMessage match {
@@ -45,6 +50,11 @@ object UserManager {
     }
   }
 
+  /**
+   *
+   * @param user to be verified
+   * @return status message
+   */
   def sendVerificationEmail(user: User): String = {
     val token: String = TokenManager.generateToken(user.email)
     val longUrl = "http://localhost:9000/verify?token=" + token + "&email=" + user.email

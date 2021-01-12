@@ -43,6 +43,10 @@ object Routes extends App with UserJsonSupport with LoginRequestJsonSupport {
       }
   }
 
+  /**
+   * handles all the get post requests to appropriate path endings
+   * @return
+   */
   def route: Route = {
     handleExceptions(exceptionHandler) {
       concat(

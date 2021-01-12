@@ -67,14 +67,29 @@ object DatabaseUtils {
     DatabaseConfig.collection.find(equal("email",email)).toFuture()
   }
 
+  /**
+   *
+   * @param email whos verificationComplete param needs to be updated
+   * @return  Future[result.UpdateResult]
+   */
   def verifyEmail(email: String): Future[result.UpdateResult] = {
     DatabaseConfig.collection.updateOne(equal("email", email), set("verificationComplete", true)).toFuture()
   }
 
+  /**
+   *
+   * @param index of short url
+   * @return long index of respective short index
+   */
   def longUrl(index: Int): Future[Seq[ShortUrl]] = {
     DatabaseConfig.collectionForUrl.find(equal("index", index)).toFuture()
   }
 
+  /**
+   *
+   * @param longUrl to be shortened
+   * @return index of shortened url
+   */
   def shortUrl(longUrl: String):Int = {
     val newIndex = DatabaseConfig.collectionForUrl.count().toFuture()
     val newIndexLong = Await.result(newIndex, 60.seconds)

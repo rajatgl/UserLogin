@@ -2,7 +2,7 @@ package com.bridgelabz.logintest
 
 import akka.http.scaladsl.model.StatusCodes.Conflict
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.http.scaladsl.model.{HttpEntity, MediaTypes, StatusCode, StatusCodes}
+import akka.http.scaladsl.model.{HttpEntity, MediaTypes,StatusCodes}
 import akka.util.ByteString
 import com.bridgelabz.login.Routes
 import org.scalatest.matchers.should
@@ -23,7 +23,7 @@ class LoginTest extends AnyWordSpec with should.Matchers with ScalatestRouteTest
         status shouldBe StatusCodes.OK shouldBe Conflict
       }
     }
-    "login should fail" in {
+    "login should fail due to unauthorised access" in {
       val jsonRequest = ByteString(
         s"""
            |{
